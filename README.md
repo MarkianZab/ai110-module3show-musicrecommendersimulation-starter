@@ -17,19 +17,38 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world platforms like Spotify combine two approaches: collaborative filtering, which
+recommends based on patterns across many users' listening behavior ("people who liked
+this also liked..."), and content-based filtering, which recommends based on a song's own
+attributes matched against a listener's known preferences. This simulation implements
+only the content-based half, at a small scale.
 
-Some prompts to answer:
+Each `Song` carries: `genre`, `mood`, `energy`, `tempo_bpm`, `valence`, `danceability`,
+and `acousticness`. Each `UserProfile` stores a narrower set of preferences: `favorite_genre`,
+`favorite_mood`, `target_energy`, and `likes_acoustic`. The profile doesn't track every
+song attribute — tempo, valence, and danceability have no matching preference field, which
+means the `Recommender` either ignores them or treats them as secondary signals.
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+The `Recommender` scores each song by comparing it against the user's profile:
+- **Genre match**: full points if `song.genre == user.favorite_genre`, otherwise none.
+- **Mood match**: full points if `song.mood == user.favorite_mood`, otherwise none.
+- **Energy closeness**: partial credit based on how close `song.energy` is to
+  `user.target_energy`, rather than rewarding high or low energy outright — a song 
+  isn't penalized for being energetic if the user wants energy, or calm if they don't.
+- **Acoustic preference**: if `user.likes_acoustic` is True, songs with higher
+  `acousticness` score better; if False, the opposite.
 
-You can include a simple diagram or bullet list if helpful.
+Genre is weighted most heavily since it's the strongest single predictor of whether a
+song fits someone's overall taste. Mood is weighted second, since it captures emotional
+tone that genre alone can miss. Energy and acousticness contribute smaller, secondary
+weights since they refine the match rather than define it.
 
----
+To choose which songs to recommend, every song in the catalog is scored, then sorted
+from highest to lowest score. The top `k` songs are returned as the final recommendations.
+This separation matters: the *scoring rule* only knows how to grade one song against one
+profile — it has no sense of how that song compares to the rest of the catalog. The
+*ranking rule* takes all those scores and decides the actual order the user sees, and
+would also be the place to add things like tie-breaking or diversity constraints.
 
 ## Getting Started
 
