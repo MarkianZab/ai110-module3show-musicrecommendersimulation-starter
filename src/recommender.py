@@ -66,14 +66,14 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     reasons = []
 
     if song["genre"] == user_prefs["genre"]:
-        score += 3.0
-        reasons.append("genre match (+3.0)")
+        score += 1.5                                  # was 3.0
+        reasons.append("genre match (+1.5)")          # was +3.0
 
     if song["mood"] == user_prefs["mood"]:
         score += 2.0
         reasons.append("mood match (+2.0)")
 
-    energy_pts = 1.5 * (1 - abs(song["energy"] - user_prefs["energy"]))
+    energy_pts = 3.0 * (1 - abs(song["energy"] - user_prefs["energy"]))   # was 1.5
     score += energy_pts
     reasons.append(f"energy closeness (+{energy_pts:.2f})")
 
