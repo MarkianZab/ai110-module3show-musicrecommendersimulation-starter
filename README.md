@@ -2,18 +2,10 @@
 
 ## Project Summary
 
-In this project you will build and explain a small music recommender system.
-
-Your goal is to:
-
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
-
-Replace this paragraph with your own summary of what your version does.
-
----
+My version, **VibeMatch 1.0**, is a content-based recommender that scores each of 18 songs
+against a user's stated preferences — favorite genre, favorite mood, target energy level,
+and acoustic taste — using a weighted point system, then returns a ranked top 5 with a
+plain-English explanation of why each song scored what it did.
 
 ## How The System Works
 
@@ -52,7 +44,7 @@ would also be the place to add things like tie-breaking or diversity constraints
 
 ### Data Flow
 
-​```mermaid
+```mermaid
 flowchart LR
     A[User Prefs dict] --> C{For each song in CSV}
     B[songs.csv → list of dicts] --> C
@@ -60,7 +52,7 @@ flowchart LR
     D --> E[List of song, score, reasons]
     E --> F[Sort descending by score]
     F --> G[Top k → print title, score, explanation]
-​```
+```
 
 ### Algorithm Recipe
 
@@ -160,28 +152,37 @@ to the original weights.
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
+- **Tiny catalog:** 18 songs across 15 genres means most genres have exactly one song,
+  so genre-based recommendations have almost no depth.
+- **Exact-match filter bubbles:** "indie pop" earns zero genre credit against a "pop"
+  preference — the system can't see that related genres are related.
+- **Confident guessing:** for users whose taste isn't in the catalog, all scores collapse
+  into a ~0.1-point band, but the system still presents a ranked top 5 as if it were
+  meaningful (see the "No matches anywhere" test in the model card).
+- **No dislikes:** a genre the user hates and a genre they're neutral on are scored
+  identically.
+- It knows nothing about lyrics, language, artists, or how songs actually sound — only
+  seven metadata numbers and labels.
 
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
-
----
+These are explored in depth in the [model card](model_card.md).
 
 ## Reflection
 
-Read and complete `model_card.md`:
+This project showed me that a recommendation is just data plus a weighted opinion. The
+system never "understands" music — it converts a taste into numbers, measures distances,
+and sorts. What makes it feel intelligent is the explanation layer: once every score came
+with reasons, the rankings became something I could audit and argue with instead of a
+black box. The most important design lesson was scoring numerical features by closeness
+to a target rather than raw size — my first instinct (higher energy = more points) would
+have served gym music to chill listeners.
 
-[**Model Card**](model_card.md)
-
-Write 1 to 2 paragraphs here about what you learned:
-
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+Bias showed up in places I didn't put it deliberately. My +3 genre weight silently decides
+that genre outvotes mood when they conflict — a "sad but hyped" user got euphoric EDM.
+And my catalog's skew toward chill acoustic songs means any user the system can't match
+gets funneled into study music by default. Neither behavior is written anywhere in the
+code as a rule; both emerge from weights and data composition. That's the real takeaway
+about fairness in bigger systems: the biases aren't usually a line of code you can point
+to — they're the side effects of choices that looked neutral.
 
 
 
