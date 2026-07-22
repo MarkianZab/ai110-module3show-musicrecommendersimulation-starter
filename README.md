@@ -50,6 +50,36 @@ profile — it has no sense of how that song compares to the rest of the catalog
 *ranking rule* takes all those scores and decides the actual order the user sees, and
 would also be the place to add things like tie-breaking or diversity constraints.
 
+### Data Flow
+
+​```mermaid
+flowchart LR
+    A[User Prefs dict] --> C{For each song in CSV}
+    B[songs.csv → list of dicts] --> C
+    C --> D[score_song: genre +3, mood +2, energy ≤1.5, acoustic ≤1.0]
+    D --> E[List of song, score, reasons]
+    E --> F[Sort descending by score]
+    F --> G[Top k → print title, score, explanation]
+​```
+
+### Algorithm Recipe
+
+- **+3.0** — genre exact match
+- **+2.0** — mood exact match
+- **up to +1.5** — energy closeness: `1.5 × (1 − |song.energy − target_energy|)`
+- **up to +1.0** — acoustic fit: `acousticness` if the user likes acoustic, `1 − acousticness` if not
+- Maximum possible score: 7.5
+
+### Expected Biases
+
+Because genre carries the largest weight and requires an exact string match, the system
+will over-prioritize genre: "indie pop" scores zero genre points against a "pop" preference
+even though the genres are closely related. It also has no way to express dislike — a song
+from a genre the user hates and a song from a neutral genre are treated identically. Finally,
+every song a user hasn't matched on genre or mood competes only on energy and acousticness,
+which compresses most of the catalog into a narrow score band.
+
+---
 ## Getting Started
 
 ### Setup
