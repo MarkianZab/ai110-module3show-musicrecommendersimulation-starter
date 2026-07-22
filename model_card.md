@@ -61,31 +61,136 @@ Prompts:
 
 ## 6. Limitations and Bias 
 
-Where the system struggles or behaves unfairly. 
-
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
-
----
-
-## 7. Evaluation  
-
-How you checked whether the recommender behaved as expected. 
-
-Prompts:  
-
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
-
-No need for numeric metrics unless you created some.
+The biggest weakness I found is how the system behaves when a user's taste isn't in the
+catalog at all. I tested a profile asking for angry country music — a genre and mood that
+don't exist in my dataset. Instead of signaling that it couldn't find a good match, the
+system confidently returned a top 5 where the scores were nearly identical (2.09 to 2.19,
+a spread of just 0.10 points). The "ranking" at that point is basically noise. Worse,
+four of the five recommendations were chill lofi-style songs, because acoustic low-energy
+tracks happen to dominate my catalog — so a user asking for angry country gets served
+study music, with no warning that the system is guessing. This is a small-scale version
+of the cold-start problem real recommenders face with new users.
 
 ---
+
+## 7. Evaluation
+
+I tested five user profiles: three normal ones (High-Energy Pop, Chill Lofi, Deep Intense
+Rock) and two adversarial ones designed to stress the scoring logic — a "conflicted" user
+with a sad mood but very high energy, and a "no matches" user whose genre and mood don't
+exist in the catalog. For each profile I looked at whether the top 5 made intuitive sense,
+how large the score gaps were, and whether the explanations matched why I'd expect each
+song to rank where it did.
+
+### Test Outputs
+
+**High-Energy Pop** — `{genre: pop, mood: happy, energy: 0.9, likes_acoustic: False}`
+
+```
+1. Sunrise City — Neon Echo  [score: 7.20]
+   why: genre match (+3.0); mood match (+2.0); energy closeness (+1.38); acoustic fit (+0.82)
+2. Gym Hero — Max Pulse  [score: 5.41]
+   why: genre match (+3.0); energy closeness (+1.46); acoustic fit (+0.95)
+3. Rooftop Lights — Indigo Parade  [score: 3.94]
+   why: mood match (+2.0); energy closeness (+1.29); acoustic fit (+0.65)
+4. Bassline Eruption — DJ Kavo  [score: 2.40]
+   why: energy closeness (+1.43); acoustic fit (+0.97)
+5. Storm Runner — Voltline  [score: 2.38]
+   why: energy closeness (+1.48); acoustic fit (+0.90)
+```
+
+**Chill Lofi** — `{genre: lofi, mood: chill, energy: 0.35, likes_acoustic: True}`
+
+```
+1. Library Rain — Paper Lanterns  [score: 7.36]
+   why: genre match (+3.0); mood match (+2.0); energy closeness (+1.50); acoustic fit (+0.86)
+2. Midnight Coding — LoRoom  [score: 7.10]
+   why: genre match (+3.0); mood match (+2.0); energy closeness (+1.40); acoustic fit (+0.71)
+3. Focus Flow — LoRoom  [score: 5.21]
+   why: genre match (+3.0); energy closeness (+1.42); acoustic fit (+0.78)
+4. Spacewalk Thoughts — Orbit Bloom  [score: 4.32]
+   why: mood match (+2.0); energy closeness (+1.40); acoustic fit (+0.92)
+5. Coffee Shop Stories — Slow Stereo  [score: 2.36]
+   why: energy closeness (+1.47); acoustic fit (+0.89)
+```
+
+**Deep Intense Rock** — `{genre: rock, mood: intense, energy: 0.95, likes_acoustic: False}`
+
+```
+1. Storm Runner — Voltline  [score: 7.34]
+   why: genre match (+3.0); mood match (+2.0); energy closeness (+1.44); acoustic fit (+0.90)
+2. Gym Hero — Max Pulse  [score: 4.42]
+   why: mood match (+2.0); energy closeness (+1.47); acoustic fit (+0.95)
+3. Bassline Eruption — DJ Kavo  [score: 2.47]
+   why: energy closeness (+1.50); acoustic fit (+0.97)
+4. Iron Choir — Blackpine  [score: 2.41]
+   why: energy closeness (+1.47); acoustic fit (+0.94)
+5. Sunrise City — Neon Echo  [score: 2.12]
+   why: energy closeness (+1.30); acoustic fit (+0.82)
+```
+
+**Conflicted: sad but hyped** — `{genre: edm, mood: sad, energy: 0.95, likes_acoustic: False}`
+
+```
+1. Bassline Eruption — DJ Kavo  [score: 5.47]
+   why: genre match (+3.0); energy closeness (+1.50); acoustic fit (+0.97)
+2. Empty Platform — Grey Season  [score: 3.10]
+   why: mood match (+2.0); energy closeness (+0.73); acoustic fit (+0.37)
+3. Gym Hero — Max Pulse  [score: 2.42]
+   why: energy closeness (+1.47); acoustic fit (+0.95)
+4. Iron Choir — Blackpine  [score: 2.41]
+   why: energy closeness (+1.47); acoustic fit (+0.94)
+5. Storm Runner — Voltline  [score: 2.34]
+   why: energy closeness (+1.44); acoustic fit (+0.90)
+```
+
+**No matches anywhere** — `{genre: country, mood: angry, energy: 0.5, likes_acoustic: True}`
+
+```
+1. Coffee Shop Stories — Slow Stereo  [score: 2.19]
+   why: energy closeness (+1.30); acoustic fit (+0.89)
+2. Library Rain — Paper Lanterns  [score: 2.13]
+   why: energy closeness (+1.27); acoustic fit (+0.86)
+3. Focus Flow — LoRoom  [score: 2.13]
+   why: energy closeness (+1.35); acoustic fit (+0.78)
+4. Dust Road Home — Wren Hollow  [score: 2.12]
+   why: energy closeness (+1.25); acoustic fit (+0.88)
+5. Midnight Coding — LoRoom  [score: 2.09]
+   why: energy closeness (+1.38); acoustic fit (+0.71)
+```
+
+### What I compared and what surprised me
+
+**High-Energy Pop vs. Chill Lofi:** The two top-5 lists share zero songs, which is what
+should happen — these profiles sit at opposite ends of energy and acousticness. This
+confirmed the profile fields actually drive real differentiation. The nicest surprise was
+in the Chill Lofi results: Spacewalk Thoughts, an ambient song, beat out jazz and other
+options despite not matching the lofi genre, because its chill mood and high acousticness
+carried it. The system found a song with the right vibe across a genre boundary — exactly
+what a content-based recommender is supposed to do.
+
+**Deep Intense Rock vs. Conflicted (sad + high energy):** These two profiles have opposite
+moods, but their results share four of the same five songs. When the mood preference fails
+to find matches, energy quietly takes over the ranking. The conflicted profile exposed a
+hidden priority in my weights: the user said they felt sad, but the #1 result was Bassline
+Eruption — a euphoric EDM track — at 5.47, while Empty Platform, the only actually sad song,
+came second at 3.10. My +3 genre weight silently outvoted the user's stated mood. The system
+never resolves the conflict; it just lets the bigger number win, and nothing in the output
+tells the user that happened.
+
+**Normal profiles vs. the no-match profile:** For real profiles, the #1 song wins by a
+large margin (7.20 vs 5.41 for pop; 7.34 vs 4.42 for rock) — the ranking is confident and
+meaningful. For the no-match profile, all five scores landed between 2.09 and 2.19, a
+spread of just 0.10 points. The ranking still *looks* authoritative but is essentially
+noise, and it defaulted to serving chill acoustic songs to a user who asked for angry
+country — because that's simply what my catalog has the most of.
+
+**Why does Gym Hero keep showing up?** In plain terms: Gym Hero is a pop song with very
+high energy, so it collects the big genre bonus from any pop-loving user AND nearly full
+energy points from any high-energy user. It only ever loses the mood points. Since just
+one song in the whole catalog (Sunrise City) matches pop AND happy, Gym Hero is permanently
+the runner-up — a song labeled "intense" that keeps being recommended to people who asked
+for happy music.
 
 ## 8. Future Work  
 

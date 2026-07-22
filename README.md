@@ -144,13 +144,19 @@ Top recommendations:
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+**Weight shift: genre 3.0 → 1.5, energy 1.5 → 3.0.** I halved the genre weight and doubled
+the energy weight, expecting the rankings to flip toward pure energy matching. Surprisingly,
+the #1 results didn't change: Sunrise City still won High-Energy Pop (7.08 vs the old 7.20)
+and Storm Runner still won Deep Intense Rock. Songs that match both genre AND mood are so
+far ahead that they survive even a major reweighting — the top of the ranking is robust.
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
-
----
+What changed was everything below #1. The score gaps compressed dramatically: unmatched
+high-energy songs like Bassline Eruption jumped from 2.40 to ~3.82, nearly catching
+Rooftop Lights (a genuine mood match) at ~5.23. The bottom of every top-5 filled with
+interchangeable high-energy tracks regardless of genre or mood. My conclusion: the change
+made the recommendations *different*, not more accurate — energy is too crude a signal to
+lead, because two songs with identical energy can feel completely unrelated. I reverted
+to the original weights.
 
 ## Limitations and Risks
 
